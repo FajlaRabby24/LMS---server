@@ -1,60 +1,51 @@
-// config/db.ts
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
-// ====== Extend global to include mongoose connection
 declare global {
-  var mongoose:
-    | {
-        conn: Mongoose | null;
-        promise: Promise<Mongoose> | null;
-      }
-    | undefined;
+  var __mongooseConn: Promise<typeof mongoose> | undefined;
 }
 
-// ====== MongoDB URL
-const MONGODB_URL = process.env.MONGODB_URL as string;
+const connectWithOptions = async () => {
+  const uri = process.env.MONGODB_URL as string;
 
-// ====== Mongoose connection interface
-interface MongooseConnection {
-  conn: Mongoose | null;
-  promise: Promise<Mongoose> | null;
-}
+  const isProduction = process.env.NODE_ENV === "production";
+  mongoose.set("bufferTimeoutMS", isProduction ? 30000 : 60000);
 
-// ====== Use cached connection or initialize
-const cached: MongooseConnection = global.mongoose ?? {
-  conn: null,
-  promise: null,
+  return mongoose.connect(uri, {
+    serverSelectionTimeoutMS: 30000,
+    connectTimeoutMS: 20000,
+    socketTimeoutMS: 60000,
+    dbName: "LMS",
+    maxPoolSize: isProduction ? 20 : 10,
+    minPoolSize: isProduction ? 5 : 2,
+    bufferCommands: false,
+    retryWrites: true,
+  });
 };
 
-if (!global.mongoose) {
-  global.mongoose = cached;
-}
+const connectDB = async () => {
+  try {
+    if (!process.env.MONGODB_URL) {
+      throw new Error("❌ Mongodb url is not defined");
+    }
 
-// ====== Connect function
-export const connectDB = async (): Promise<Mongoose> => {
-  if (cached.conn) return cached.conn;
+    if (!global.__mongooseConn) {
+      global.__mongooseConn = connectWithOptions();
+    }
 
-  if (!MONGODB_URL) throw new Error("Missing MongoDB URL");
+    await global.__mongooseConn;
+    console.log("🟢 Mongoose connected");
 
-  cached.promise =
-    cached.promise ||
-    mongoose.connect(MONGODB_URL, {
-      dbName: "LMS",
-      bufferCommands: false,
+    mongoose.connection.on("error", (err) => {
+      console.error("⚠️ Mongoose connection error:", err);
     });
 
-  cached.conn = await cached.promise;
-
-  // ===== Optional: connection event listeners =====
-  mongoose.connection.on("connected", () =>
-    console.log("🟢 Mongoose connected")
-  );
-  mongoose.connection.on("disconnected", () =>
-    console.log("🔴 Mongoose disconnected")
-  );
-  mongoose.connection.on("error", (err) =>
-    console.error("⚠️ Mongoose connection error:", err)
-  );
-
-  return cached.conn;
+    mongoose.connection.on("disconnected", (err) => {
+      console.log("🔴 Mongoose disconnected");
+    });
+  } catch (error: any) {
+    console.error("❌ mongodb connection failed", error);
+    throw error;
+  }
 };
+
+export default connectDB;
