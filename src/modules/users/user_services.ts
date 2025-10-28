@@ -31,5 +31,14 @@ export const registerUser = async (userData: {
     role: assignedRole,
   });
 
+  // TODO: send verification email
+
   await newUser.save();
+  return {
+    success: true,
+    message: "User registerd successfully",
+    data: {
+      newUser,
+    },
+  };
 };
