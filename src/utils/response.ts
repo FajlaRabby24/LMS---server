@@ -34,3 +34,13 @@ export const sendSuccess = <T>(
 
   return res.status(statusCode).json(response);
 };
+
+// -------- send created ---------
+export const sendCreated = <T>(
+  res: Response,
+  message: string = "Resource created successfully",
+  data?: T,
+  meta?: ApiResponse["meta"]
+) => {
+  return sendSuccess(res, message, data, 201, meta);
+};
