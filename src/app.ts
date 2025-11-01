@@ -2,6 +2,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { Request, Response } from "express";
 import userRouter from "./modules/users/user_routes";
+import { globalErrorHandler } from "./utils/errorHandler";
 
 const app = express();
 
@@ -20,5 +21,8 @@ app.use("/api/v1/user", userRouter);
 app.get("/", (_req: Request, res: Response) => {
   res.send("LMS - backend server is running");
 });
+
+// ---------- global error handler ----------
+app.use(globalErrorHandler);
 
 export default app;
