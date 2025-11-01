@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import User, { IUser } from "./user_model";
 import { findUserByEmail } from "./user_repository";
 
+// ------- register user ----------
 export const registerUser = async (userData: {
   name: string;
   email: string;
@@ -17,13 +18,12 @@ export const registerUser = async (userData: {
     };
   }
 
-  const hashPassword = await bcrypt.hash(password, 10);
-
   // assign admin role for the first user
   const existingUserCount = await User.estimatedDocumentCount();
   const assignedRole: IUser["role"] =
     existingUserCount === 0 ? "admin" : "user";
 
+  const hashPassword = await bcrypt.hash(password, 10);
   const newUser = new User({
     name,
     email,
