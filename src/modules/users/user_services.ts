@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import User, { IUser } from "./user_model";
 import { findUserByEmail } from "./user_repository";
 
@@ -31,6 +32,12 @@ export const registerUser = async (userData: {
       password: hashPassword,
       role: assignedRole,
     });
+
+    // ------- generate OTP ---------
+    const activationCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+    console.log(activationCode);
+    newUser.activationCode = activationCode;
+    newUser.activationCodeExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     // TODO: send verification email
 
